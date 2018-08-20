@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# find in makefiles and cmake files
+#
+# syntax:
+#   fmk [<path> [<options>]]
+#   - <path>: location to search in, if not supplied '.' is used
+#   - <options>: options passed to find, if not supplied all (c)make files
+#     in <path> are listed
+
+
+if [ $# -eq 0 ]
+then
+    SEARCHDIR="."
+else
+    SEARCHDIR="$1"; shift
+fi
+
+find $SEARCHDIR \( -name Makefile -o -name "*.mk" -o -name "SPL_PH*" -o -name "*.cmake" -o -name "[cC]make*" \) $*
