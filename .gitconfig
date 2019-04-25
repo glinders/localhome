@@ -1,9 +1,12 @@
 [user]
 	name = Geert linders
-	email = geert.linders@salcom.com
+	email = geert.linders@hotmail.com
 [init]
 	templatedir = ~/.git_template
 [alias]
   push-for-review = push origin HEAD:refs/for/master
 	st = status
 	lg = log --oneline --decorate
+
+[includeIf "gitdir:~/projects/salcom/"]
+    path = ~/projects/salcom/.gitconfig
