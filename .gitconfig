@@ -4,6 +4,12 @@
 [init]
 	templatedir = ~/.git_template
 [alias]
-  push-for-review = push origin HEAD:refs/for/master
+	push-for-review = push origin HEAD:refs/for/master
 	st = status
-	lg = log --oneline --decorate
+	sti = status --ignore-submodules
+	lg = log --oneline --decorate --graph --all
+	nfm = "!f(){ git -c core.fileMode=false $@; };f"
+[push]
+	default = simple
+[core]
+	autocrlf = input
