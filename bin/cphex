@@ -1,0 +1,196 @@
+#!/usr/bin/python3
+import sh
+import os
+import re
+import sys
+import argparse
+
+
+APP_VERSION = '0.02'
+
+
+def listfiles(folder):
+    for root, folders, files in os.walk(folder):
+        for filename in folders + files:
+            yield os.path.join(root, filename)
+
+
+def dir_path(path):
+    if os.path.isdir(path):
+        return path
+    else:
+        raise argparse.ArgumentTypeError(f'\'{path}\' is not a valid path')
+
+
+class CopyHexAll(object):
+    def __init__(self, argv):
+        # parse our args; we need them later
+        self.args = self._get_args(argv[1:])
+
+    def _get_args(self, argv):
+        # create an argument parser
+        parser = argparse.ArgumentParser()
+        # add our own arguments
+        parser.add_argument(
+            '--version', '-v', dest='version',
+            action='version', version=APP_VERSION,
+            help='print version number and exit',
+        )
+        parser.add_argument(
+            '--src-dir', dest='src_dir',
+            required=False, type=dir_path,
+            default=os.path.join('.', 'build'),
+            help=
+                'directory where hex files are located'
+                ', default: %(default)s',
+        )
+        parser.add_argument(
+            '--dst-dir', dest='dst_dir',
+            required=False, type=dir_path,
+            default=os.path.join('..', 'output'),
+            help=
+               'existing destination directory where hex files should go'
+               ', default: %(default)s',
+        )
+        parser.add_argument(
+            '--verbose', dest='verbose',
+            required=False, default=False,
+            help='verbose output',
+            action='store_true',
+        )
+        parser.add_argument(
+            '--boot', dest='boot',
+            required=False, default=False,
+            help='also copy bootloader',
+            action='store_true',
+        )
+        parser.add_argument(
+            '--debug', dest='debug',
+            required=False, default=False,
+            help='copy Debug version',
+            action='store_true',
+        )
+        parser.add_argument(
+            '--release', dest='release',
+            required=False, default=True,
+            help='copy Release version',
+            action='store_true',
+        )
+        parser.add_argument(
+            '--no-release', dest='release',
+            required=False, default=False,
+            help='don\'t copy Release version',
+            action='store_false',
+        )
+        parser.add_argument(
+            '--clear', dest='clear',
+            required=False, default=False,
+            help='clear destination directory first',
+            action='store_true',
+        )
+        parser.add_argument(
+            '--add-hash', dest='add_hash',
+            required=False, default=False,
+            help='add file with git hash',
+            action='store_true',
+        )
+        # parse the arguments
+        args = parser.parse_args(argv)
+        return args
+
+    def copy_files(self):
+        # clear destination directory
+        if self.args.clear:
+            dst_dir = os.path.join(self.args.dst_dir, '*')
+            if self.args.verbose:
+                print(f'Clearing directory \'{dst_dir}\'')
+            # sh.rm('-rf', sh.glob(f'{dst_dir}'))
+            sh.find(f'{self.args.dst_dir}', '-type', 'f', '-exec', 'rm', '{}', ';')
+            sh.find(f'{self.args.dst_dir}', '-type', 'd', '-empty', '-delete')
+        # get selected files
+        selection = []
+        if self.args.debug:
+            selection.append('Debug')
+        if self.args.release:
+            selection.append('Release')
+        for selected in selection:
+            if self.args.verbose:
+                t0 = 'Copying \'{selected}\' files'
+                t1 = ''
+                if self.args.boot:
+                    t1 = ', adding bootloader'
+                print(f'{t0}{t1}')
+            # find the selected version of all application relocated and encrypted hex files
+            arm_app_hex_files = sh.find(
+                self.args.src_dir, '-name', '*_app_encrypted_relocated.hex',
+                '-path', f'*arm-{selected}-*',
+            )
+            avr_app_hex_files = sh.find(
+                self.args.src_dir, '-name', '*_app_encrypted.hex',
+                '-path', f'*avr-{selected}-*',
+            )
+            app_hex_files = [file for file in arm_app_hex_files] + [file for file in avr_app_hex_files]
+            app_hex_files.sort()
+            bl_hex_files = [None for file in app_hex_files]
+            if self.args.boot:
+                # find the selected version of all bootloader hex files
+                bl_hex_files = sh.find(
+                    self.args.src_dir, '-name', '*_bl.hex',
+                    '-path', f'*-{selected}-*',
+                )
+                bl_hex_files = [file for file in bl_hex_files]
+                bl_hex_files.sort()
+            # filename pattern is:
+            #   <src_dir>/arm-Release-<model>-<revision>/<dirs>/b2086m0_app_encrypted_relocated.hex
+            # for instance:
+            #   ./build/arm-Release-b2086m0-revB/button/target/b2086m0/application/b2086m0_app_encrypted_relocated.hex
+            #   ./build/arm-Release-b2085m0-revA/button/target/b2085m0/application/b2085m0_app_encrypted_relocated.hex
+            #   ./build/arm-Release-r2090m1-revA/radio/target/r2090m1/application/r2090m1_app_encrypted_relocated.hex
+            #   ./build/arm-Release-b2086m0-revC/button/target/b2086m0/application/b2086m0_app_encrypted_relocated.hex
+            #   ./build/arm-Release-p2003m0-revD/peripheral/target/p2003m0/application/p2003m0_app_encrypted_relocated.hex
+            #   ./build/arm-Release-r2090m0-revF/radio/target/r2090m0/application/r2090m0_app_encrypted_relocated.hex
+            for app_src_file, bl_src_file in zip(app_hex_files, bl_hex_files):
+                # strip any \n at end of filename
+                app_src_file = app_src_file.rstrip()
+                if bl_src_file:
+                    bl_src_file = bl_src_file.rstrip()
+                # find model
+                model = re.search(f'a[rv][mr]-{selected}-(.*)-rev', app_src_file).group(1)
+                # find revision
+                revision = re.search(f'a[rv][mr]-{selected}-.*-(rev[0-9a-zA-Z])', app_src_file).group(1)
+                # get destination directory and create it if not there
+                dst_dir = os.path.join(self.args.dst_dir, selected, model + '-' + revision)
+                if not os.path.isdir(dst_dir):
+                    if self.args.verbose:
+                        print(f'Creating directory \'{dst_dir}\'')
+                    sh.mkdir('-p', dst_dir)
+                # find file
+                dst_file = re.search('application/(.*)', app_src_file).group(1)
+                # copy file
+                if self.args.verbose:
+                    print(f'Copying file {app_src_file} to {os.path.join(dst_dir, dst_file)}')
+                sh.cp(os.path.join(app_src_file), os.path.join(dst_dir, dst_file))
+                if bl_src_file:
+                    dst_file = re.search('bootloader/(.*)', bl_src_file).group(1)
+                    if self.args.verbose:
+                        print(f'Copying file {bl_src_file} to {os.path.join(dst_dir, dst_file)}')
+                    sh.cp(os.path.join(bl_src_file), os.path.join(dst_dir, dst_file))
+        if self.args.add_hash:
+            hash_file = os.path.join(self.args.dst_dir, 'git_hash.txt')
+            if self.args.verbose:
+                print(f'adding hash file \'{hash_file}\'')
+            sh.git(
+                'describe', '--match=NeVeRmAtCh', '--always', '--abbrev=7', '--dirty',
+                _out=hash_file
+            )
+
+
+def main():
+    app = CopyHexAll(sys.argv)
+    app.copy_files()
+
+
+if __name__ == "__main__":
+    main()
+
+

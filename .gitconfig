@@ -4,7 +4,8 @@
 [init]
 	templatedir = ~/.git_template
 [alias]
-	push-for-review = push origin HEAD:refs/for/master
+	push-for-master = push origin HEAD:refs/for/master
+	push-for-rfid-demo = push origin HEAD:refs/for/rfid_demo
 	st = status
 	sti = status --ignore-submodules
 	lg = log --oneline --decorate --graph --all
@@ -13,3 +14,6 @@
 	default = simple
 [core]
 	autocrlf = input
+[safe]
+	directory = %(prefix)///wsl.localhost/Ubuntu-18.04/home/geert/projects/newplatform/snarp2
+	directory = %(prefix)///wsl.localhost/Ubuntu-18.04/home/geert/projects/newplatform/snarp
