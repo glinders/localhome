@@ -173,27 +173,26 @@ class CopyHexAll(object):
                     print(f'Copying file {app_src_file} to {os.path.join(dst_dir, dst_file)}')
                 sh.cp(os.path.join(app_src_file), os.path.join(dst_dir, dst_file))
 
-
-            for bl_src_file in bl_hex_files:
-                # strip any \n at end of filename
-                bl_src_file = bl_src_file.rstrip()
-                # find model
-                model = re.search(f'a[rv][mr]-{selected}-(.*)-rev', bl_src_file).group(1)
-                # find revision
-                revision = re.search(f'a[rv][mr]-{selected}-.*-(rev[0-9a-zA-Z])', bl_src_file).group(1)
-                # get destination directory and create it if not there
-                dst_dir = os.path.join(self.args.dst_dir, selected, model + '-' + revision)
-                if not os.path.isdir(dst_dir):
+            if self.args.boot:
+                for bl_src_file in bl_hex_files:
+                    # strip any \n at end of filename
+                    bl_src_file = bl_src_file.rstrip()
+                    # find model
+                    model = re.search(f'a[rv][mr]-{selected}-(.*)-rev', bl_src_file).group(1)
+                    # find revision
+                    revision = re.search(f'a[rv][mr]-{selected}-.*-(rev[0-9a-zA-Z])', bl_src_file).group(1)
+                    # get destination directory and create it if not there
+                    dst_dir = os.path.join(self.args.dst_dir, selected, model + '-' + revision)
+                    if not os.path.isdir(dst_dir):
+                        if self.args.verbose:
+                            print(f'Creating directory \'{dst_dir}\'')
+                        sh.mkdir('-p', dst_dir)
+                    # find file
+                    dst_file = re.search('bootloader/(.*)', bl_src_file).group(1)
+                    # copy file
                     if self.args.verbose:
-                        print(f'Creating directory \'{dst_dir}\'')
-                    sh.mkdir('-p', dst_dir)
-                # find file
-                dst_file = re.search('bootloader/(.*)', bl_src_file).group(1)
-                # copy file
-                if self.args.verbose:
-                    print(f'Copying file {bl_src_file} to {os.path.join(dst_dir, dst_file)}')
-                sh.cp(os.path.join(bl_src_file), os.path.join(dst_dir, dst_file))
-
+                        print(f'Copying file {bl_src_file} to {os.path.join(dst_dir, dst_file)}')
+                    sh.cp(os.path.join(bl_src_file), os.path.join(dst_dir, dst_file))
 
         if self.args.add_hash:
             hash_file = os.path.join(self.args.dst_dir, 'git_hash.txt')
