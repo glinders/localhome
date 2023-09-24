@@ -1,6 +1,6 @@
 [user]
 	name = Geert linders
-	email = geert.linders@salcom.com
+	email = geert.linders@hotmail.com
 [init]
 	templatedir = ~/.git_template
 [alias]
@@ -17,3 +17,5 @@
 [safe]
 	directory = %(prefix)///wsl.localhost/Ubuntu-18.04/home/geert/projects/newplatform/snarp2
 	directory = %(prefix)///wsl.localhost/Ubuntu-18.04/home/geert/projects/newplatform/snarp
+[includeIf "gitdir:~/projects/salcom/"]
+    path = ~/projects/salcom/.gitconfig

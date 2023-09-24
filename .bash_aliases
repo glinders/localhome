@@ -7,4 +7,3 @@ alias ds="differs ../snarp.buildall/build/ ../snarp/build/ '[blnpr]*\.bin' 2>&1|
 alias dc="differc ../snarp.buildall/build/ ../snarp/build/ '[blnpr]*\.bin' 2>&1|tee >(wc -l)|egrep 'identical|differ|No such|^[0-9]*'"
 
 alias blink="printf '\e[?12h'"
-
