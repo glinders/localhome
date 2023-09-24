@@ -104,9 +104,13 @@ class CopyHexAll(object):
             dst_dir = os.path.join(self.args.dst_dir, '*')
             if self.args.verbose:
                 print(f'Clearing directory \'{dst_dir}\'')
-            # sh.rm('-rf', sh.glob(f'{dst_dir}'))
-            sh.find(f'{self.args.dst_dir}', '-type', 'f', '-exec', 'rm', '{}', ';')
-            sh.find(f'{self.args.dst_dir}', '-type', 'd', '-empty', '-delete')
+            sh.find(
+                f'{self.args.dst_dir}', '-type', 'f', '-exec', 'rm', '{}', ';'
+            )
+            sh.find(
+                f'{self.args.dst_dir}', '-mindepth', '1', '-type', 'd',
+                '-empty', '-delete'
+            )
         # get selected files
         selection = []
         if self.args.debug:
