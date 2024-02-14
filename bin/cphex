@@ -106,11 +106,11 @@ class CopyHexAll(object):
                 print(f'Clearing directory \'{dst_dir}\'')
             sh.find(
                 f'{self.args.dst_dir}', '-type', 'f', '-exec', 'rm', '{}', ';'
-            )
+            ).split('\n')
             sh.find(
                 f'{self.args.dst_dir}', '-mindepth', '1', '-type', 'd',
                 '-empty', '-delete'
-            )
+            ).split('\n')
         # get selected files
         selection = []
         if self.args.debug:
@@ -128,12 +128,12 @@ class CopyHexAll(object):
             arm_app_hex_files = sh.find(
                 self.args.src_dir, '-name', '*_app_encrypted_relocated.hex',
                 '-path', f'*arm-{selected}-*',
-            )
+            ).split('\n')
             avr_app_hex_files = sh.find(
                 self.args.src_dir, '-name', '*_app_encrypted.hex',
                 '-path', f'*avr-{selected}-*',
-            )
-            app_hex_files = [file for file in arm_app_hex_files] + [file for file in avr_app_hex_files]
+            ).split('\n')
+            app_hex_files = [file for file in arm_app_hex_files if file] + [file for file in avr_app_hex_files if file]
             app_hex_files.sort()
             bl_hex_files = [None for file in app_hex_files]
             if self.args.boot:
@@ -141,8 +141,8 @@ class CopyHexAll(object):
                 bl_hex_files = sh.find(
                     self.args.src_dir, '-name', '*_bl.hex',
                     '-path', f'*-{selected}-*',
-                )
-                bl_hex_files = [file for file in bl_hex_files]
+                ).split('\n')
+                bl_hex_files = [file for file in bl_hex_files if file]
                 bl_hex_files.sort()
             # filename pattern is:
             #   <src_dir>/arm-Release-<model>-<revision>/<dirs>/b2086m0_app_encrypted_relocated.hex
@@ -156,7 +156,6 @@ class CopyHexAll(object):
 
             # todo:turn for loop into function to get rid of duplicate code
             # todo:for application and bootloader
-
             for app_src_file in app_hex_files:
                 # strip any \n at end of filename
                 app_src_file = app_src_file.rstrip()

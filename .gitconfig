@@ -1,11 +1,12 @@
 [user]
 	name = Geert linders
-	email = geert.linders@hotmail.com
+	email = geert.linders@salcom.com
 [init]
 	templatedir = ~/.git_template
 [alias]
 	push-for-master = push origin HEAD:refs/for/master
 	push-for-rfid-demo = push origin HEAD:refs/for/rfid_demo
+	push-for-2086-ota = push origin HEAD:refs/for/2086_ota
 	st = status
 	sti = status --ignore-submodules
 	lg = log --oneline --decorate --graph --all
@@ -15,7 +16,6 @@
 [core]
 	autocrlf = input
 [safe]
-	directory = %(prefix)///wsl.localhost/Ubuntu-18.04/home/geert/projects/newplatform/snarp2
-	directory = %(prefix)///wsl.localhost/Ubuntu-18.04/home/geert/projects/newplatform/snarp
+	directory = *
 [includeIf "gitdir:~/projects/salcom/"]
-    path = ~/projects/salcom/.gitconfig
+	path = ~/projects/salcom/.gitconfig
