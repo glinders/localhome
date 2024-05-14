@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# see: https://electronics.stackexchange.com/a/598163/186476
+
+if [ $# -ne 0 ]
+then
+ echo 'find all ARM elf files and extract size info'
+ echo 'must be called from the root of a snarp project'
+ echo 'elf files are searched for in build/arm-*'
+fi
+
+echo "flash size includes EEPROM"
+arm-none-eabi-size `find ./build -name '[blnpr]*\.elf'|sort`
+
+ELFS=$(find ./build/arm-* -name '[blnpr]*\.elf'|sort)
+BINS=$(find ./build/arm-* -name '[blnpr]*\.bin'|sort)
+
+printf "%8s %8s   %s\n" flash sram file
+
+echo "flash size includes EEPROM"
+for e in ${ELFS}; do
+ size_info=$(arm-none-eabi-size $e | awk NR\>1);
+ text=$(echo "$size_info" | awk '{print $1}');
+ data=$(echo "$size_info" | awk '{print $2}');
+ bss=$(echo "$size_info" | awk '{print $3}');
+ flash=$(($text + $data));
+ sram=$(($bss + $data));
+ printf "%8s %8s   %s\n" $flash $sram $e
+done
+
+echo "flash size without EEPROM"
+stat -c "%s,%n" ${BINS} | column -t -s,
